@@ -17,9 +17,9 @@ const isMobile = useIsMobile();
 
 onMounted(() => {
   // Check if user prefers dark mode
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    theme.value = 'dark';
-    document.documentElement.classList.add('dark');
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    theme.value = 'light';
+    document.documentElement.classList.add('light');
   }
 });
 
@@ -81,7 +81,7 @@ const navLinks = [
         
         <Button variant="ghost" size="icon" @click="toggleTheme">
           <Sun v-if="theme === 'dark'" class="h-5 w-5" />
-          <Moon v-else class="h-5 w-5" />
+          <Moon v-else class="h-5 w-5 w-b" />
         </Button>
         
         <DropdownMenu>

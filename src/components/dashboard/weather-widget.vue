@@ -82,7 +82,7 @@ const renderWeatherIcon = (type: WeatherType, size = 24) => {
           <component :is="renderWeatherIcon(weather?.type || 'cloudy', 48)" />
         </div>
         <div class="text-3xl font-bold mb-2">{{ weather?.temperature }}°C</div>
-        <div class="grid grid-cols-2 gap-2 w-full text-sm">
+        <div class="grid grid-cols-1 gap-2 w-full text-sm">
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">Humidity</span>
             <span class="font-medium">{{ weather?.humidity }}%</span>

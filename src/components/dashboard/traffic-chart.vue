@@ -90,6 +90,7 @@ watch(timeRange, () => {
             :categories="['vehicles', 'congestion']"
             index="hour"
             type="grouped"
+            class="h-[300px]"
           />
         </div>
       </template>

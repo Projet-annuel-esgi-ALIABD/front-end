@@ -106,11 +106,11 @@ const aqiColor = () => getAQIColor(latestValue());
       </div>
       <template v-else>
         <div class="h-[300px]">
-          <!-- Use your Vue-native LineChart component -->
           <LineChart
             :data="data"
             :categories="['value']"
             index="time"
+            class="h-full"
           />
         </div>
       </template>

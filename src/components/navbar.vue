@@ -1,19 +1,23 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
-import { LayoutDashboard, Map, Bell, Settings, Sun, Moon, Menu, X } from 'lucide-vue-next';
+import { RouterLink, useRouter } from 'vue-router';
+import { LayoutDashboard, Map, Bell, Settings, Sun, Moon, Menu, X, LogOut, User } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/user-mobile';
+import { useToast } from '@/components/ui/use-toast';
 
 defineOptions({
   name: 'Navbar'
 });
 
+const router = useRouter();
+const { toast } = useToast();
 const theme = ref('light');
 const notificationCount = ref(3);
 const isMobile = useIsMobile();
+const isAuthenticated = ref(false); // This should come from your auth store/service
 
 onMounted(() => {
   // Check if user prefers dark mode
@@ -21,6 +25,9 @@ onMounted(() => {
     theme.value = 'light';
     document.documentElement.classList.add('light');
   }
+
+  // For demo purposes - check if user is logged in (would normally be handled by an auth service)
+  isAuthenticated.value = localStorage.getItem('isAuthenticated') === 'true';
 });
 
 const toggleTheme = () => {
@@ -39,6 +46,26 @@ const navLinks = [
   { name: 'City Map', href: '/map', icon: Map },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
+
+const logout = () => {
+  // Here you would call your auth service logout method
+  
+  // For demo purposes
+  localStorage.removeItem('isAuthenticated');
+  isAuthenticated.value = false;
+  
+  toast({
+    title: "Logged out successfully",
+    description: "You have been logged out of your account",
+  });
+  
+  router.push('/auth');
+};
+
+const getUserInitial = () => {
+  // Would normally come from user profile
+  return 'U';
+};
 </script>
 
 <template>
@@ -56,7 +83,7 @@ const navLinks = [
           <span class="font-semibold text-xl">EcoSense</span>
         </RouterLink>
         
-        <nav v-if="!isMobile" class="ml-8 hidden md:flex items-center space-x-6">
+        <nav v-if="!isMobile && isAuthenticated" class="ml-8 hidden md:flex items-center space-x-6">
           <RouterLink
             v-for="link in navLinks"
             :key="link.name"
@@ -70,33 +97,52 @@ const navLinks = [
       </div>
       
       <div class="flex items-center space-x-3">
-        <Button variant="ghost" size="icon" class="relative" as-child>
-          <RouterLink to="/notifications">
-            <Bell class="h-5 w-5" />
-            <span v-if="notificationCount > 0" class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-              {{ notificationCount }}
-            </span>
-          </RouterLink>
+        <Button v-if="!isAuthenticated" variant="outline" size="sm" as-child>
+          <RouterLink to="/auth">Log in / Register</RouterLink>
         </Button>
+
+        <template v-else>
+          <Button variant="ghost" size="icon" class="relative" as-child>
+            <RouterLink to="/notifications">
+              <Bell class="h-5 w-5" />
+              <span v-if="notificationCount > 0" class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
+                {{ notificationCount }}
+              </span>
+            </RouterLink>
+          </Button>
+        </template>
         
         <Button variant="ghost" size="icon" @click="toggleTheme">
           <Sun v-if="theme === 'dark'" class="h-5 w-5" />
           <Moon v-else class="h-5 w-5 w-b" />
         </Button>
         
-        <DropdownMenu>
+        <DropdownMenu v-if="isAuthenticated">
           <DropdownMenuTrigger as-child>
             <Button variant="outline" class="rounded-full h-8 w-8 p-0">
               <span class="sr-only">Open user menu</span>
               <div class="rounded-full bg-primary/10 h-full w-full flex items-center justify-center text-sm font-semibold">
-                A
+                {{ getUserInitial() }}
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="min-w-[160px]">
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem as-child>
+              <RouterLink to="/profile" class="flex w-full items-center">
+                <User class="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </RouterLink>
+            </DropdownMenuItem>
+            <DropdownMenuItem as-child>
+              <RouterLink to="/settings" class="flex w-full items-center">
+                <Settings class="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </RouterLink>
+            </DropdownMenuItem>
+            <DropdownMenuItem @click="logout" class="flex items-center text-red-500 focus:text-red-500">
+              <LogOut class="mr-2 h-4 w-4" />
+              <span>Logout</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         
@@ -112,14 +158,33 @@ const navLinks = [
               <h2 class="text-lg font-semibold mb-6">Menu</h2>
               <nav class="flex flex-col space-y-4">
                 <RouterLink
-                  v-for="link in navLinks"
-                  :key="link.name"
-                  :to="link.href"
+                  v-if="!isAuthenticated"
+                  to="/auth"
                   class="flex items-center px-2 py-2 rounded-md hover:bg-muted text-sm font-medium"
                 >
-                  <component :is="link.icon" class="h-4 w-4 mr-2" />
-                  {{ link.name }}
+                  <User class="h-4 w-4 mr-2" />
+                  Log in / Register
                 </RouterLink>
+                
+                <template v-else>
+                  <RouterLink
+                    v-for="link in navLinks"
+                    :key="link.name"
+                    :to="link.href"
+                    class="flex items-center px-2 py-2 rounded-md hover:bg-muted text-sm font-medium"
+                  >
+                    <component :is="link.icon" class="h-4 w-4 mr-2" />
+                    {{ link.name }}
+                  </RouterLink>
+                  
+                  <button 
+                    @click="logout"
+                    class="flex items-center px-2 py-2 rounded-md hover:bg-muted text-sm font-medium w-full text-left text-red-500"
+                  >
+                    <LogOut class="h-4 w-4 mr-2" />
+                    Logout
+                  </button>
+                </template>
               </nav>
             </div>
           </SheetContent>

@@ -88,6 +88,15 @@ watch(timeRange, () => {
           <BarChart
             :data="data"
             :categories="['vehicles', 'congestion']"
+            :config="{
+              x: (d) => d.hour,
+              y: (d) => d.vehicles,
+              y2: (d) => d.congestion,
+              colors: ['#646cff', '#ff4d4f'],
+              index: 'hour',
+              type: 'grouped',
+            }"
+            :colors="['#646cff', '#ff4d4f']"
             index="hour"
             type="grouped"
             class="h-[300px]"

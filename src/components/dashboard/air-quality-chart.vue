@@ -47,7 +47,7 @@ const loadData = () => {
   setTimeout(() => {
     // Generate mock data based on selectedRange
     const now = new Date();
-    const points = selectedRange.value === "24h" ? 24 : selectedRange.value === "7d" ? 7 : 30;
+    const points = timeRanges[selectedRange.value].days;
     
     data.value = Array(points).fill(0).map((_, i) => {
       // Create your data point format that matches the LineChart component
@@ -109,6 +109,7 @@ const aqiColor = () => getAQIColor(latestValue());
           <LineChart
             :data="data"
             :categories="['value']"
+            :colors="['#646cff']"
             index="time"
             class="h-full"
           />

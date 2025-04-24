@@ -43,8 +43,8 @@ const registerSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address',
   }),
-  password: z.string().min(8, {
-    message: 'Password must be at least 8 characters',
+  password: z.string().min(6, {
+    message: 'Password must be at least 6 characters',
   }),
   password2: z.string(),
 }).refine(data => data.password === data.password2, {
@@ -79,26 +79,14 @@ const onLoginSubmit = handleLoginSubmit(async (values) => {
   try {
     isSubmitting.value = true;
 
-    axios.defaults.baseURL = environment.apiUrl;
-
     // Send login request
-    const response = await fetch(`${environment.apiUrl}login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: values.username,
-        password: values.password,
-      }),
+    const response = await axios.post('/api/login/', {
+      username: values.username,
+      password: values.password
     });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.detail || 'Login failed. Please check your credentials and try again.');
-    }
 
     // Store authentication token if returned
-    if (data && data.access) {
+    if (response.data && response.data.access) {
       localStorage.setItem('token', response.data.token);
       // Show success toast
       toast({
@@ -135,10 +123,8 @@ const onRegisterSubmit = handleRegisterSubmit(async (values) => {
   try {
     isSubmitting.value = true;
 
-    axios.defaults.baseURL = environment.apiUrl;
-
     // Send login request
-    const response = await axios.post('/register', {
+    const response = await axios.post('/api/register/', {
       username: values.username,
       first_name: values.first_name,
       last_name: values.last_name,
@@ -157,7 +143,7 @@ const onRegisterSubmit = handleRegisterSubmit(async (values) => {
       });
       // redirect to login page after 3 seconds
       setTimeout(() => {
-        router.push('/login');
+        router.push('/auth');
       }, 3000);
     } else {
       toast({

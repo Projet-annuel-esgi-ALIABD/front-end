@@ -19,4 +19,25 @@ const router = createRouter({
   ]
 });
 
+// Navigation guard to check authentication
+router.beforeEach((to, from, next) => {
+  // Public routes that don't require authentication
+  const publicRoutes = ['/auth', '/forgot-password', '/health'];
+  
+  // Check if the user is authenticated
+  // Replace this with your actual authentication check
+  const isAuthenticated = localStorage.getItem('token') !== null;
+  
+  if (publicRoutes.includes(to.path)) {
+    next();
+  } else if (!isAuthenticated) {
+    // Redirect to auth if not authenticated
+    next('/auth');
+  } else {
+    // validate the token here if needed
+    
+    next();
+  }
+});
+
 export default router;

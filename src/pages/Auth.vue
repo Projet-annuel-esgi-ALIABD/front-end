@@ -11,6 +11,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-vue-next';
+import axios from 'axios';
+import environment from '@/environment/environment';
 
 const router = useRouter();
 const { toast } = useToast();
@@ -19,8 +21,8 @@ const activeTab = ref('login');
 
 // Login form validation schema
 const loginSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address',
+  username: z.string().min(3, {
+    message: 'Username must be at least 3 characters',
   }),
   password: z.string().min(6, {
     message: 'Password must be at least 6 characters',
@@ -29,8 +31,14 @@ const loginSchema = z.object({
 
 // Register form validation schema
 const registerSchema = z.object({
-  name: z.string().min(2, {
-    message: 'Name must be at least 2 characters',
+  username: z.string().min(3, {
+    message: 'Username must be at least 3 characters',
+  }),
+  first_name: z.string().min(2, {
+    message: 'First name must be at least 2 characters',
+  }),
+  last_name: z.string().min(2, {
+    message: 'Last name must be at least 2 characters',
   }),
   email: z.string().email({
     message: 'Please enter a valid email address',
@@ -38,38 +46,76 @@ const registerSchema = z.object({
   password: z.string().min(8, {
     message: 'Password must be at least 8 characters',
   }),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
+  password2: z.string(),
+}).refine(data => data.password === data.password2, {
   message: "Passwords don't match",
-  path: ["confirmPassword"],
+  path: ["password2"],
 });
 
 // Setup login form
-const { handleSubmit: handleLoginSubmit, errors: loginErrors } = useForm({
+const { handleSubmit: handleLoginSubmit, errors: loginErrors, values: loginValues, setFieldValue: setLoginFieldValue } = useForm({
   validationSchema: toTypedSchema(loginSchema),
+  initialValues: {
+    username: '',
+    password: ''
+  }
 });
 
 // Setup register form
-const { handleSubmit: handleRegisterSubmit, errors: registerErrors } = useForm({
+const { handleSubmit: handleRegisterSubmit, errors: registerErrors, values: registerValues, setFieldValue: setRegisterFieldValue } = useForm({
   validationSchema: toTypedSchema(registerSchema),
+  initialValues: {
+    username: '',
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    password2: ''
+  }
 });
 
 // Submit login form
 const onLoginSubmit = handleLoginSubmit(async (values) => {
   try {
     isSubmitting.value = true;
-    // Here you would authenticate with your backend
-    console.log('Login form submitted:', values);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    axios.defaults.baseURL = environment.apiUrl;
 
-    // Show success toast
-    toast({
-      title: "Login successful",
-      description: "Welcome back to EcoSense!",
-      variant: "success",
+    // Send login request
+    const response = await fetch(`${environment.apiUrl}login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: values.username,
+        password: values.password,
+      }),
     });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail || 'Login failed. Please check your credentials and try again.');
+    }
+
+    // Store authentication token if returned
+    if (data && data.access) {
+      localStorage.setItem('token', response.data.token);
+      // Show success toast
+      toast({
+        title: "Login successful",
+        description: "Welcome back to EcoSense!",
+        variant: "success",
+      });
+    } else {
+      toast({
+        title: "Login failed",
+        description: "Invalid credentials. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    
 
     // Redirect to dashboard
     router.push('/');
@@ -88,18 +134,39 @@ const onLoginSubmit = handleLoginSubmit(async (values) => {
 const onRegisterSubmit = handleRegisterSubmit(async (values) => {
   try {
     isSubmitting.value = true;
-    // Here you would register with your backend
-    console.log('Register form submitted:', values);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    axios.defaults.baseURL = environment.apiUrl;
 
-    // Show success toast
-    toast({
-      title: "Registration successful",
-      description: "Your account has been created. Welcome to EcoSense!",
-      variant: "success",
+    // Send login request
+    const response = await axios.post('/register', {
+      username: values.username,
+      first_name: values.first_name,
+      last_name: values.last_name,
+      email: values.email,
+      password: values.password,
+      password2: values.password2
     });
+
+    // Store authentication token if returned
+    if (response.data) {
+      // Show success toast
+      toast({
+        title: "Register successful",
+        description: "Welcome to EcoSense!",
+        variant: "success",
+      });
+      // redirect to login page after 3 seconds
+      setTimeout(() => {
+        router.push('/login');
+      }, 3000);
+    } else {
+      toast({
+        title: "Register failed",
+        description: "Error occured. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Redirect to dashboard
     router.push('/');
@@ -157,10 +224,10 @@ const switchTab = (tab) => {
                 <CardContent>
                   <form @submit.prevent="onLoginSubmit" class="space-y-4">
                     <div class="space-y-2">
-                      <Label for="login-email">Email</Label>
-                      <Input id="login-email" name="email" type="email" placeholder="your.email@example.com" />
-                      <p v-if="loginErrors.email" class="text-sm text-destructive flex items-center gap-1 mt-1">
-                        <AlertCircle class="h-3 w-3" /> {{ loginErrors.email }}
+                      <Label for="login-username">Username</Label>
+                      <Input id="login-username" name="username" :value="loginValues.username" @input="e => setLoginFieldValue('username', e.target.value)" type="text" placeholder="username" />
+                      <p v-if="loginErrors.username" class="text-sm text-destructive flex items-center gap-1 mt-1">
+                        <AlertCircle class="h-3 w-3" /> {{ loginErrors.username }}
                       </p>
                     </div>
                     <div class="space-y-2">
@@ -170,7 +237,7 @@ const switchTab = (tab) => {
                           Forgot password?
                         </RouterLink>
                       </div>
-                      <Input id="login-password" name="password" type="password" />
+                      <Input id="login-password" name="password" :value="loginValues.password" @input="e => setLoginFieldValue('password', e.target.value)" type="password" />
                       <p v-if="loginErrors.password" class="text-sm text-destructive flex items-center gap-1 mt-1">
                         <AlertCircle class="h-3 w-3" /> {{ loginErrors.password }}
                       </p>
@@ -205,32 +272,46 @@ const switchTab = (tab) => {
                 <CardContent>
                   <form @submit.prevent="onRegisterSubmit" class="space-y-4">
                     <div class="space-y-2">
-                      <Label for="register-name">Full Name</Label>
-                      <Input id="register-name" name="name" type="text" placeholder="John Doe" />
-                      <p v-if="registerErrors.name" class="text-sm text-destructive flex items-center gap-1 mt-1">
-                        <AlertCircle class="h-3 w-3" /> {{ registerErrors.name }}
+                      <Label for="register-name">Username</Label>
+                      <Input id="register-name" name="username" :value="registerValues.username" @input="e => setRegisterFieldValue('username', e.target.value)" type="text" placeholder="Username" />
+                      <p v-if="registerErrors.username" class="text-sm text-destructive flex items-center gap-1 mt-1">
+                        <AlertCircle class="h-3 w-3" /> {{ registerErrors.username }}
+                      </p>
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="register-first_name">First name</Label>
+                      <Input id="register-first_name" name="first_name" :value="registerValues.first_name" @input="e => setRegisterFieldValue('first_name', e.target.value)" type="text" placeholder="John" />
+                      <p v-if="registerErrors.first_name" class="text-sm text-destructive flex items-center gap-1 mt-1">
+                        <AlertCircle class="h-3 w-3" /> {{ registerErrors.first_name }}
+                      </p>
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="register-last_name">Last name</Label>
+                      <Input id="register-last_name" name="last_name" :value="registerValues.last_name" @input="e => setRegisterFieldValue('last_name', e.target.value)" type="text" placeholder="Doe" />
+                      <p v-if="registerErrors.last_name" class="text-sm text-destructive flex items-center gap-1 mt-1">
+                        <AlertCircle class="h-3 w-3" /> {{ registerErrors.last_name }}
                       </p>
                     </div>
                     <div class="space-y-2">
                       <Label for="register-email">Email</Label>
-                      <Input id="register-email" name="email" type="email" placeholder="your.email@example.com" />
+                      <Input id="register-email" name="email" :value="registerValues.email" @input="e => setRegisterFieldValue('email', e.target.value)" type="email" placeholder="your.email@example.com" />
                       <p v-if="registerErrors.email" class="text-sm text-destructive flex items-center gap-1 mt-1">
                         <AlertCircle class="h-3 w-3" /> {{ registerErrors.email }}
                       </p>
                     </div>
                     <div class="space-y-2">
                       <Label for="register-password">Password</Label>
-                      <Input id="register-password" name="password" type="password" />
+                      <Input id="register-password" name="password" :value="registerValues.password" @input="e => setRegisterFieldValue('password', e.target.value)" type="password" />
                       <p v-if="registerErrors.password" class="text-sm text-destructive flex items-center gap-1 mt-1">
                         <AlertCircle class="h-3 w-3" /> {{ registerErrors.password }}
                       </p>
                     </div>
                     <div class="space-y-2">
                       <Label for="register-confirm-password">Confirm Password</Label>
-                      <Input id="register-confirm-password" name="confirmPassword" type="password" />
-                      <p v-if="registerErrors.confirmPassword"
+                      <Input id="register-confirm-password" name="password2" :value="registerValues.password2" @input="e => setRegisterFieldValue('password2', e.target.value)" type="password" />
+                      <p v-if="registerErrors.password2"
                         class="text-sm text-destructive flex items-center gap-1 mt-1">
-                        <AlertCircle class="h-3 w-3" /> {{ registerErrors.confirmPassword }}
+                        <AlertCircle class="h-3 w-3" /> {{ registerErrors.password2 }}
                       </p>
                     </div>
                     <Button type="submit" class="w-full" :disabled="isSubmitting">
@@ -257,7 +338,6 @@ const switchTab = (tab) => {
         </div>
       </Tabs>
     </div>
-
   </div>
 </template>
 

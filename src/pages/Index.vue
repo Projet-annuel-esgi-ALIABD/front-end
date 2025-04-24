@@ -5,7 +5,6 @@ import Navbar from '@/components/navbar.vue';
 import PollutionIndicators from '@/components/dashboard/pollution-indicators.vue';
 import AirQualityChart from '@/components/dashboard/air-quality-chart.vue';
 import TrafficChart from '@/components/dashboard/traffic-chart.vue';
-import MetroMap from '@/components/dashboard/metro-map.vue';
 import WeatherWidget from '@/components/dashboard/weather-widget.vue';
 import AlertFeed from '@/components/dashboard/alert-feed.vue';
 import PredictionCard from '@/components/dashboard/prediction-card.vue';
@@ -95,19 +94,12 @@ const formattedDate = () => {
             <AlertFeed />
           </div>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <MetroMap />
-          <div class="md:col-span-1 animate-fade-in">
-            <!-- Placeholder for future widget -->
-          </div>
-        </div>
       </div>
     </main>
     
     <footer class="mt-auto border-t py-4">
       <div class="container text-center text-sm text-muted-foreground">
-        <p>© 2023 EcoSense Smart City Platform. All rights reserved.</p>
+        <p>© 2025 EcoSense Smart Sinj City Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>

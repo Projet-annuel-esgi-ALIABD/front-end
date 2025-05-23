@@ -12,7 +12,7 @@ export default defineConfig(() => ({
     port: 8080,
     proxy: {
       "/api": {
-        target: process.env.VITE_API_URL, // Use the API URL from the .env file
+        target: "https://dev-api-meteo-du-sinj.apps.fgib.fr",
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, "/api"),

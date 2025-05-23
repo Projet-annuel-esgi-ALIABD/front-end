@@ -80,9 +80,13 @@ const onLoginSubmit = handleLoginSubmit(async (values) => {
     isSubmitting.value = true;
 
     // Send login request
-    const response = await axios.post('/api/login/', {
-      username: values.username,
-      password: values.password
+    const response = await axios({
+      method: 'POST',
+      baseURL: `${environment.apiUrl}/api/login/`,
+      data: {
+        username: values.username,
+        password: values.password
+      }
     });
 
     // Store authentication token if returned
@@ -124,13 +128,17 @@ const onRegisterSubmit = handleRegisterSubmit(async (values) => {
     isSubmitting.value = true;
 
     // Send login request
-    const response = await axios.post('/api/register/', {
-      username: values.username,
-      first_name: values.first_name,
-      last_name: values.last_name,
-      email: values.email,
-      password: values.password,
-      password2: values.password2
+    const response = await axios({
+      method: 'POST',
+      baseURL: `${environment.apiUrl}/api/register/`,
+      data: {
+        username: values.username,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        email: values.email,
+        password: values.password,
+        password2: values.password2
+      }
     });
 
     // Store authentication token if returned

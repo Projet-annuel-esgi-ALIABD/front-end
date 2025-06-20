@@ -91,7 +91,7 @@ const onLoginSubmit = handleLoginSubmit(async (values) => {
 
     // Store authentication token if returned
     if (response.data && response.data.access) {
-      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('token', response.data.access);
       // Show success toast
       toast({
         title: "Login successful",
@@ -110,7 +110,7 @@ const onLoginSubmit = handleLoginSubmit(async (values) => {
     
 
     // Redirect to dashboard
-    router.push('/');
+    router.push('/dashboard');
   } catch (error) {
     toast({
       title: "Login failed",

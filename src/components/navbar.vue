@@ -17,7 +17,7 @@ const { toast } = useToast();
 const theme = ref('light');
 const notificationCount = ref(3);
 const isMobile = useIsMobile();
-const isAuthenticated = ref(false); // This should come from your auth store/service
+const isAuthenticated = ref(localStorage.getItem('token') !== null && localStorage.getItem('token') !== 'null' && localStorage.getItem('token') !== undefined);
 
 onMounted(() => {
   // Check if user prefers dark mode
@@ -27,7 +27,7 @@ onMounted(() => {
   }
 
   // For demo purposes - check if user is logged in (would normally be handled by an auth service)
-  isAuthenticated.value = localStorage.getItem('isAuthenticated') === 'true';
+  isAuthenticated.value = (localStorage.getItem('token') !== null && localStorage.getItem('token') !== 'null' && localStorage.getItem('token') !== undefined);
 });
 
 const toggleTheme = () => {
@@ -51,7 +51,7 @@ const logout = () => {
   // Here you would call your auth service logout method
   
   // For demo purposes
-  localStorage.removeItem('isAuthenticated');
+  localStorage.removeItem('token');
   isAuthenticated.value = false;
   
   toast({
@@ -63,7 +63,13 @@ const logout = () => {
 };
 
 const getUserInitial = () => {
-  // Would normally come from user profile
+  const token = localStorage.getItem('token');
+  if (!token) return 'U';
+  const user = JSON.parse(atob(token.split('.')[1]));
+  console.log(user);
+  if (user && user.name) {
+    return user.name.charAt(0).toUpperCase();
+  }
   return 'U';
 };
 </script>

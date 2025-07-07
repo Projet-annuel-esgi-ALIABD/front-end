@@ -68,41 +68,4 @@ watch(timeRange, () => {
 </script>
 
 <template>
-  <Card class="col-span-3 animate-fade-in">
-    <CardHeader class="flex flex-row items-center justify-between pb-2">
-      <CardTitle class="text-base font-medium">Traffic Flow</CardTitle>
-      <Tabs :default-value="timeRange" class="w-[150px]" @value-change="(value: '12h' | '24h') => timeRange = value">
-        <TabsList class="grid w-full grid-cols-2">
-          <TabsTrigger value="12h">12h</TabsTrigger>
-          <TabsTrigger value="24h">24h</TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </CardHeader>
-    <CardContent class="pt-0">
-      <div v-if="loading" class="h-[300px] flex items-center justify-center">
-        <div class="animate-pulse text-sm text-muted-foreground">Loading traffic data...</div>
-      </div>
-      <template v-else>
-        <div class="h-[300px]">
-          <!-- Use your Vue-native BarChart component -->
-          <BarChart
-            :data="data"
-            :categories="['vehicles', 'congestion']"
-            :config="{
-              x: (d) => d.hour,
-              y: (d) => d.vehicles,
-              y2: (d) => d.congestion,
-              colors: ['#646cff', '#ff4d4f'],
-              index: 'hour',
-              type: 'grouped',
-            }"
-            :colors="['#646cff', '#ff4d4f']"
-            index="hour"
-            type="grouped"
-            class="h-[300px]"
-          />
-        </div>
-      </template>
-    </CardContent>
-  </Card>
 </template>

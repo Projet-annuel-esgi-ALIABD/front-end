@@ -24,10 +24,10 @@ onMounted(() => {
       id: 1,
       type: "air_quality",
       title: "Air Quality Alert",
-      description: "Our AI predicts a significant decrease in air quality in the next 48 hours due to changing weather patterns and industrial activity.",
+      description: "Our AI predicts a significant decrease in air quality in the next hour due to changing weather patterns and industrial activity.",
       probability: 87,
       impact: "high",
-      timeframe: "Next 48 hours",
+      timeframe: "Next hour",
     };
     loading.value = false;
   }, 2000);

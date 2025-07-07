@@ -4,6 +4,7 @@ import Index from './pages/Index.vue';
 import NotFound from './pages/NotFound.vue';
 import Auth from './pages/Auth.vue';
 import Healthcheck from './pages/Healthcheck.vue';
+import Profile from './pages/Profile.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,7 +17,7 @@ const router = createRouter({
     { path: '/notifications', component: NotFound },
     { path: '/auth', component: Auth },
     { path: '/forgot-password', component: NotFound },
-    // ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE
+    { path: '/profile', component: Profile },
     { path: '/:pathMatch(.*)*', component: NotFound }
   ]
 });

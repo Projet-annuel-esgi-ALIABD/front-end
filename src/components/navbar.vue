@@ -43,8 +43,6 @@ const toggleTheme = () => {
 
 const navLinks = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'City Map', href: '/map', icon: Map },
-  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 const logout = () => {
@@ -106,17 +104,6 @@ const getUserInitial = () => {
         <Button v-if="!isAuthenticated" variant="outline" size="sm" as-child>
           <RouterLink to="/auth">Log in / Register</RouterLink>
         </Button>
-
-        <template v-else>
-          <Button variant="ghost" size="icon" class="relative" as-child>
-            <RouterLink to="/notifications">
-              <Bell class="h-5 w-5" />
-              <span v-if="notificationCount > 0" class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-                {{ notificationCount }}
-              </span>
-            </RouterLink>
-          </Button>
-        </template>
         
         <Button variant="ghost" size="icon" @click="toggleTheme">
           <Sun v-if="theme === 'dark'" class="h-5 w-5" />

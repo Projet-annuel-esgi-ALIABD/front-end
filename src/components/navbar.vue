@@ -42,7 +42,7 @@ const toggleTheme = () => {
 };
 
 const navLinks = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 ];
 
 const logout = () => {
@@ -64,7 +64,6 @@ const getUserInitial = () => {
   const token = localStorage.getItem('token');
   if (!token) return 'U';
   const user = JSON.parse(atob(token.split('.')[1]));
-  console.log(user);
   if (user && user.name) {
     return user.name.charAt(0).toUpperCase();
   }
@@ -73,7 +72,7 @@ const getUserInitial = () => {
 </script>
 
 <template>
-  <header class="md:grid-cols-6 sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  <header class="min-w-[700px] md:grid-cols-6 sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
     <div class="container flex h-16 items-center justify-between">
       <div class="flex items-center">
         <RouterLink to="/" class="flex items-center">
@@ -124,12 +123,6 @@ const getUserInitial = () => {
               <RouterLink to="/profile" class="flex w-full items-center">
                 <User class="mr-2 h-4 w-4" />
                 <span>Profile</span>
-              </RouterLink>
-            </DropdownMenuItem>
-            <DropdownMenuItem as-child>
-              <RouterLink to="/settings" class="flex w-full items-center">
-                <Settings class="mr-2 h-4 w-4" />
-                <span>Settings</span>
               </RouterLink>
             </DropdownMenuItem>
             <DropdownMenuItem @click="logout" class="flex items-center text-red-500 focus:text-red-500">

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import NavBar from '@/components/navbar.vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { UserIcon, ShieldIcon, SettingsIcon, BellIcon, PlusIcon, Trash2Icon, EditIcon, AlertTriangleIcon, InfoIcon, CheckCircleIcon } from 'lucide-vue-next';
@@ -71,8 +72,7 @@ onMounted(async () => {
                     headers: { Authorization: `Bearer ${token}` }
                 }).then(response => {
                     user.value = response.data;
-                    user.value.role = toRaw(user.value).is_staff ? 'admin' : 'user'; // Ensure role is set
-                    console.log(user.value);
+                    user.value.role = user.value.is_staff ? 'admin' : 'user';
                 });
             } catch (error) {
                 console.log(error);
@@ -154,132 +154,132 @@ const saveThresholds = async () => {
 };
 
 const openAlertDialog = (alert?: Alert) => {
-  if (alert) {
-    editingAlert.value = alert;
-    setAlertFieldValue('type', alert.type);
-    setAlertFieldValue('message', alert.message);
-  } else {
-    editingAlert.value = null;
-    resetForm();
-  }
-  isDialogOpen.value = true;
+    if (alert) {
+        editingAlert.value = alert;
+        setAlertFieldValue('type', alert.type);
+        setAlertFieldValue('message', alert.message);
+    } else {
+        editingAlert.value = null;
+        resetForm();
+    }
+    isDialogOpen.value = true;
 };
 
 const closeAlertDialog = () => {
-  isDialogOpen.value = false;
-  editingAlert.value = null;
-  resetForm();
+    isDialogOpen.value = false;
+    editingAlert.value = null;
+    resetForm();
 };
 
 const onAlertSubmit = handleAlertSubmit(async (values) => {
-  if (!isAdmin.value) return;
-  
-  isCreatingAlert.value = true;
-  try {
-    // In real app: API call to create/update alert
-    await new Promise(resolve => setTimeout(resolve, 800));
+    if (!isAdmin.value) return;
     
-    if (editingAlert.value) {
-      // Update existing alert
-      const index = alerts.value.findIndex(a => a.id === editingAlert.value!.id);
-      if (index !== -1) {
-        alerts.value[index] = {
-          ...alerts.value[index],
-          ...values,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      toast({ 
-        title: 'Alert updated', 
-        description: 'Alert has been updated successfully',
-      });
-    } else {
-      // Create new alert
-      alerts.value.unshift({
-          id: Date.now(),
-          ...values,
-          createdAt: new Date().toISOString(),
-          isActive: true,
-      });
-      toast({ 
-        title: 'Alert created', 
-        description: 'New alert has been created successfully',
-      });
+    isCreatingAlert.value = true;
+    try {
+        // In real app: API call to create/update alert
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        if (editingAlert.value) {
+            // Update existing alert
+            const index = alerts.value.findIndex(a => a.id === editingAlert.value!.id);
+            if (index !== -1) {
+                alerts.value[index] = {
+                    ...alerts.value[index],
+                    ...values,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            toast({ 
+                title: 'Alert updated', 
+                description: 'Alert has been updated successfully',
+            });
+        } else {
+            // Create new alert
+            alerts.value.unshift({
+                id: Date.now(),
+                ...values,
+                createdAt: new Date().toISOString(),
+                isActive: true,
+            });
+            toast({ 
+                title: 'Alert created', 
+                description: 'New alert has been created successfully',
+            });
+        }
+        
+        closeAlertDialog();
+    } catch (e) {
+        console.error('Error with alert:', e);
+        toast({ 
+            title: 'Error', 
+            description: 'Failed to save alert', 
+            variant: 'destructive' 
+        });
+    } finally {
+        isCreatingAlert.value = false;
     }
-    
-    closeAlertDialog();
-  } catch (e) {
-    console.error('Error with alert:', e);
-    toast({ 
-      title: 'Error', 
-      description: 'Failed to save alert', 
-      variant: 'destructive' 
-    });
-  } finally {
-    isCreatingAlert.value = false;
-  }
 });
 
 const deleteAlert = async (alertId: number) => {
-  if (!isAdmin.value) return;
-  
-  try {
-    // In real app: await axios.delete(`${environment.apiUrl}/api/alerts/${alertId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+    if (!isAdmin.value) return;
     
-    alerts.value = alerts.value.filter(alert => alert.id !== alertId);
-    toast({ 
-      title: 'Alert deleted', 
-      description: 'Alert has been removed successfully',
-    });
-  } catch (e) {
-    console.error('Error deleting alert:', e);
-    toast({ 
-      title: 'Error', 
-      description: 'Failed to delete alert', 
-      variant: 'destructive' 
-    });
-  }
+    try {
+        // In real app: await axios.delete(`${environment.apiUrl}/api/alerts/${alertId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+        
+        alerts.value = alerts.value.filter(alert => alert.id !== alertId);
+        toast({ 
+            title: 'Alert deleted', 
+            description: 'Alert has been removed successfully',
+        });
+    } catch (e) {
+        console.error('Error deleting alert:', e);
+        toast({ 
+            title: 'Error', 
+            description: 'Failed to delete alert', 
+            variant: 'destructive' 
+        });
+    }
 };
 
 const toggleAlertStatus = async (alertId: number) => {
-  if (!isAdmin.value) return;
-  
-  try {
-    const alert = alerts.value.find(a => a.id === alertId);
-    if (alert) {
-      alert.isActive = !alert.isActive;
-      alert.updatedAt = new Date().toISOString();
-      
-      toast({ 
-        title: alert.isActive ? 'Alert activated' : 'Alert deactivated', 
-        description: `Alert has been ${alert.isActive ? 'activated' : 'deactivated'}`,
-      });
+    if (!isAdmin.value) return;
+    
+    try {
+        const alert = alerts.value.find(a => a.id === alertId);
+        if (alert) {
+            alert.isActive = !alert.isActive;
+            alert.updatedAt = new Date().toISOString();
+            
+            toast({ 
+                title: alert.isActive ? 'Alert activated' : 'Alert deactivated', 
+                description: `Alert has been ${alert.isActive ? 'activated' : 'deactivated'}`,
+            });
+        }
+    } catch (e) {
+        console.error('Error toggling alert:', e);
+        toast({ 
+            title: 'Error', 
+            description: 'Failed to update alert status', 
+            variant: 'destructive' 
+        });
     }
-  } catch (e) {
-    console.error('Error toggling alert:', e);
-    toast({ 
-      title: 'Error', 
-      description: 'Failed to update alert status', 
-      variant: 'destructive' 
-    });
-  }
 };
 
 const getAlertIcon = (type: AlertType) => {
-  switch (type) {
-    case 'critical': return AlertTriangleIcon;
-    case 'warning': return AlertTriangleIcon;
-    case 'info': return InfoIcon;
-    default: return InfoIcon;
-  }
+    switch (type) {
+        case 'critical': return AlertTriangleIcon;
+        case 'warning': return AlertTriangleIcon;
+        case 'info': return InfoIcon;
+        default: return InfoIcon;
+    }
 };
 
 const getRoleIcon = () => {
-  return isAdmin.value ? ShieldIcon : UserIcon;
+    return isAdmin.value ? ShieldIcon : UserIcon;
 };
 
 const getRoleBadgeVariant = () => {
-  return isAdmin.value ? 'default' : 'secondary';
+    return isAdmin.value ? 'default' : 'secondary';
 };
 </script>
 
@@ -288,14 +288,7 @@ const getRoleBadgeVariant = () => {
     <div class="w-full max-w-4xl mx-auto animate-fade-in space-y-6">
       <!-- Header -->
       <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight">Profile</h1>
-          <p class="text-muted-foreground">Manage your account and system settings</p>
-        </div>
-        <Badge :variant="getRoleBadgeVariant()" class="flex items-center gap-2 px-3 py-1">
-          <component :is="getRoleIcon()" class="h-4 w-4" />
-          {{ user?.role?.toUpperCase() }}
-        </Badge>
+        <NavBar />
       </div>
 
       <!-- User Information Card -->
@@ -312,23 +305,26 @@ const getRoleBadgeVariant = () => {
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p class="mt-2 text-muted-foreground">Loading...</p>
           </div>
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-else-if="user" class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-2">
               <Label class="text-sm font-medium">Username</Label>
-              <Input :value="user?.username" readonly class="bg-muted/50" disabled />
+              <Input :model-value="user.username || 'Not available'" class="bg-muted/50" disabled />
             </div>
             <div class="space-y-2">
               <Label class="text-sm font-medium">Email</Label>
-              <Input :value="user?.email" readonly class="bg-muted/50" disabled />
+              <Input :model-value="user.email || 'Not available'" class="bg-muted/50" disabled />
             </div>
             <div class="space-y-2">
               <Label class="text-sm font-medium">First Name</Label>
-              <Input :value="user?.first_name" readonly class="bg-muted/50" disabled />
+              <Input :model-value="user.first_name || 'Not available'" class="bg-muted/50" disabled />
             </div>
             <div class="space-y-2">
               <Label class="text-sm font-medium">Last Name</Label>
-              <Input :value="user?.last_name" readonly class="bg-muted/50" disabled />
+              <Input :model-value="user.last_name || 'Not available'" class="bg-muted/50" disabled />
             </div>
+          </div>
+          <div v-else class="text-center py-8">
+            <p class="text-muted-foreground">No user data available</p>
           </div>
         </CardContent>
       </Card>

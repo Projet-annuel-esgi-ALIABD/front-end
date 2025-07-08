@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/user-mobile';
 import { useToast } from '@/components/ui/use-toast';
+import axios from 'axios';
 
 defineOptions({
   name: 'Navbar'
@@ -18,13 +19,25 @@ const theme = ref('light');
 const notificationCount = ref(3);
 const isMobile = useIsMobile();
 const isAuthenticated = ref(localStorage.getItem('token') !== null && localStorage.getItem('token') !== 'null' && localStorage.getItem('token') !== undefined);
+const userInitial = ref('U'); // Default initial
 
-onMounted(() => {
+onMounted(async () => {
   // Check if user prefers dark mode
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
     theme.value = 'light';
     document.documentElement.classList.add('light');
   }
+
+  await getUserInitial().then(initial => {
+    userInitial.value = initial;
+  }).catch(error => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/auth';
+    } else {
+      console.error("Error fetching user initial:", error);
+    }
+  });
 
   // For demo purposes - check if user is logged in (would normally be handled by an auth service)
   isAuthenticated.value = (localStorage.getItem('token') !== null && localStorage.getItem('token') !== 'null' && localStorage.getItem('token') !== undefined);
@@ -60,14 +73,20 @@ const logout = () => {
   router.push('/auth');
 };
 
-const getUserInitial = () => {
+const getUserInitial = async () => {
   const token = localStorage.getItem('token');
-  if (!token) return 'U';
-  const user = JSON.parse(atob(token.split('.')[1]));
-  if (user && user.name) {
-    return user.name.charAt(0).toUpperCase();
+  if (!token) {
+    window.location.href = '/auth';
   }
-  return 'U';
+  return await axios.get('/api/user/', {
+    headers: { Authorization: `Bearer ${token}` }
+  }).then(response => {
+    const user = response.data;
+    return user.first_name ? user.first_name.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase();
+  }).catch(error => {
+    console.error("Error fetching user data:", error);
+    return 'U'; // Fallback initial
+  });
 };
 </script>
 
@@ -114,7 +133,7 @@ const getUserInitial = () => {
             <Button variant="outline" class="rounded-full h-8 w-8 p-0">
               <span class="sr-only">Open user menu</span>
               <div class="rounded-full bg-primary/10 h-full w-full flex items-center justify-center text-sm font-semibold">
-                {{ getUserInitial() }}
+                {{ userInitial }}
               </div>
             </Button>
           </DropdownMenuTrigger>

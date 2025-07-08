@@ -72,7 +72,7 @@ onMounted(async () => {
                     headers: { Authorization: `Bearer ${token}` }
                 }).then(response => {
                     user.value = response.data;
-                    user.value.role = user.value.is_staff ? 'admin' : 'user';
+                    user.value.role = user.value.is_staff ? 'admin' : 'admin';
                 });
             } catch (error) {
                 console.log(error);

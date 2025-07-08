@@ -75,7 +75,6 @@ onMounted(async () => {
                     user.value.role = user.value.is_staff ? 'admin' : 'admin';
                 });
             } catch (error) {
-                console.log(error);
                 toast({ 
                     title: 'Error', 
                     description: 'Failed to decode user data. Please log in again.', 

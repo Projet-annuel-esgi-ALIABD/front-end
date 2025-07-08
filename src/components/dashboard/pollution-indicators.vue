@@ -28,7 +28,6 @@ onMounted(async () => {
     }
   })
     .then(response => {
-      console.log("Fetched pollution data:", response.data.slice(-1)[0].components);
       const components = response.data.slice(-1)[0].components;
       const last_hour_components = response.data.slice(-2)[0].components || {};
       data.value = {
@@ -42,7 +41,6 @@ onMounted(async () => {
         nh3: { value: components.nh3, trend: last_hour_components.nh3 ? parseFloat((components.nh3 - last_hour_components.nh3).toFixed(2)) : 0 },
         pm10: { value: components.pm10, trend: last_hour_components.pm10 ? parseFloat((components.pm10 - last_hour_components.pm10).toFixed(2)) : 0 },
       }
-      console.log("Pollution data:", data.value);
       loading.value = false;
     })
     .catch(error => {

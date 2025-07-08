@@ -91,11 +91,7 @@ function handleLegendItemClick(d: BulletLegendItemInterface, i: number) {
         :tick-format="yFormatter"
         :domain-line="false"
         :grid-line="showGridLine"
-        :attributes="{
-          [Axis.selectors.grid]: {
-            class: 'text-muted',
-          },
-        }"
+        :num-ticks="5"
         tick-text-color="hsl(var(--vis-text-color))"
       />
 

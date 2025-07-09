@@ -96,7 +96,7 @@ onMounted(async () => {
                     headers: { Authorization: `Bearer ${token}` }
                 }).then(response => {
                     user.value = response.data;
-                    user.value.role = user.value.is_staff ? 'admin' : 'admin';
+                    user.value.role = user.value.is_staff ? 'admin' : 'user';
                 });
             } catch (error) {
                 toast({ 
@@ -573,7 +573,7 @@ const getIndicatorOptions = () => [
       </Card>
 
       <!-- Alert Management -->
-      <Card>
+      <Card v-if="isAdmin" class="border-blue-200 dark:border-blue-900">
         <CardHeader>
           <div class="flex items-center justify-between">
             <div>

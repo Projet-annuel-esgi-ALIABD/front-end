@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/user-mobile';
 import { useToast } from '@/components/ui/use-toast';
 import axios from 'axios';
+import environment from '@/environment/environment';
 
 defineOptions({
   name: 'Navbar'

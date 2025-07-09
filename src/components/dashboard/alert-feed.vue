@@ -31,7 +31,6 @@ onMounted(async () => {
         time: getTimeAgo(item.created_at)
       });
     });
-    console.log("Alerts loaded successfully:", alerts.value);
     loading.value = false;
   }).catch(error => {
     console.error("Error fetching alerts:", error);

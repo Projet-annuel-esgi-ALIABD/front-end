@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart } from "@/components/ui/chart-line";
 import axios from 'axios';
 import { toast } from 'vue-sonner';
+import environment from '@/environment/environment';
 
 const timeRanges = {
   "24h": { days: 24, label: "hours", base: 75, variance: 30 },

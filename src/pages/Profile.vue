@@ -24,7 +24,6 @@ interface Alert {
     type: AlertType;
     message: string;
     createdAt: string;
-    isActive: boolean;
     updatedAt?: string;
 }
 
@@ -91,32 +90,17 @@ onMounted(async () => {
         await axios.get(`${environment.apiUrl}/api/alerte/`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }).then(response => {
-            thresholds.value = response.data;
-            newThresholds.value = { ...thresholds.value };
+            const data = response.data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            data.map((item: any) => {
+                alerts.value.push({
+                    id: item.id,
+                    type: item.alert_type,
+                    message: item.message,
+                    createdAt: item.created_at
+                });
+            });
+            isLoading.value = false;
         });
-        alerts.value = [
-            { 
-                id: 1, 
-                type: 'critical', 
-                message: 'Air quality threshold exceeded in downtown area', 
-                createdAt: new Date().toISOString(),
-                isActive: true 
-            },
-            { 
-                id: 2, 
-                type: 'warning', 
-                message: 'Traffic congestion detected on main routes', 
-                createdAt: new Date(Date.now() - 3600000).toISOString(),
-                isActive: true 
-            },
-            { 
-                id: 3, 
-                type: 'info', 
-                message: 'Scheduled maintenance on sensors', 
-                createdAt: new Date(Date.now() - 7200000).toISOString(),
-                isActive: false 
-            }
-        ];
     } catch (e) {
         console.error('Error loading profile:', e);
         toast({ 
@@ -128,6 +112,22 @@ onMounted(async () => {
         isLoading.value = false;
     }
 });
+
+const getTimeAgo = (time: string | number | Date) => {
+    const now = new Date();
+    const alertTime = new Date(time);
+    const diffInSeconds = Math.floor((now.getTime() - alertTime.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+        return `${diffInSeconds} seconds ago`;
+    } else if (diffInSeconds < 3600) {
+        const minutes = Math.floor(diffInSeconds / 60);
+        return `${minutes} minutes ago`;
+    } else {
+        const hours = Math.floor(diffInSeconds / 3600);
+        return `${hours} hours ago`;
+    }
+}
 
 const saveThresholds = async () => {
     if (!isAdmin.value) return;
@@ -179,11 +179,16 @@ const onAlertSubmit = handleAlertSubmit(async (values) => {
     
     isCreatingAlert.value = true;
     try {
-        // In real app: API call to create/update alert
-        await new Promise(resolve => setTimeout(resolve, 800));
         
         if (editingAlert.value) {
             // Update existing alert
+            await axios.patch(`${environment.apiUrl}/api/alerte/${editingAlert.value.id}/`, {
+                alert_type: values.type,
+                message: values.message,
+                triggered_by: "admin"
+            }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
             const index = alerts.value.findIndex(a => a.id === editingAlert.value!.id);
             if (index !== -1) {
                 alerts.value[index] = {
@@ -198,11 +203,17 @@ const onAlertSubmit = handleAlertSubmit(async (values) => {
             });
         } else {
             // Create new alert
+            await axios.post(`${environment.apiUrl}/api/alerte/`, {
+                alert_type: values.type,
+                message: values.message,
+                triggered_by: "admin"
+            }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
             alerts.value.unshift({
                 id: Date.now(),
                 ...values,
                 createdAt: new Date().toISOString(),
-                isActive: true,
             });
             toast({ 
                 title: 'Alert created', 
@@ -227,42 +238,21 @@ const deleteAlert = async (alertId: number) => {
     if (!isAdmin.value) return;
     
     try {
-        // In real app: await axios.delete(`${environment.apiUrl}/api/alerts/${alertId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-        
-        alerts.value = alerts.value.filter(alert => alert.id !== alertId);
-        toast({ 
-            title: 'Alert deleted', 
-            description: 'Alert has been removed successfully',
+        await axios.delete(`${environment.apiUrl}/api/alerte/${alertId}/`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        })
+        .then(response => {
+            alerts.value = alerts.value.filter(alert => alert.id !== alertId);
+            toast({ 
+                title: 'Alert deleted', 
+                description: 'Alert has been removed successfully',
+            });
         });
     } catch (e) {
         console.error('Error deleting alert:', e);
         toast({ 
             title: 'Error', 
             description: 'Failed to delete alert', 
-            variant: 'destructive' 
-        });
-    }
-};
-
-const toggleAlertStatus = async (alertId: number) => {
-    if (!isAdmin.value) return;
-    
-    try {
-        const alert = alerts.value.find(a => a.id === alertId);
-        if (alert) {
-            alert.isActive = !alert.isActive;
-            alert.updatedAt = new Date().toISOString();
-            
-            toast({ 
-                title: alert.isActive ? 'Alert activated' : 'Alert deactivated', 
-                description: `Alert has been ${alert.isActive ? 'activated' : 'deactivated'}`,
-            });
-        }
-    } catch (e) {
-        console.error('Error toggling alert:', e);
-        toast({ 
-            title: 'Error', 
-            description: 'Failed to update alert status', 
             variant: 'destructive' 
         });
     }
@@ -275,14 +265,6 @@ const getAlertIcon = (type: AlertType) => {
         case 'info': return InfoIcon;
         default: return InfoIcon;
     }
-};
-
-const getRoleIcon = () => {
-    return isAdmin.value ? ShieldIcon : UserIcon;
-};
-
-const getRoleBadgeVariant = () => {
-    return isAdmin.value ? 'default' : 'secondary';
 };
 </script>
 
@@ -478,10 +460,9 @@ const getRoleBadgeVariant = () => {
               :key="alert.id" 
               class="flex items-start justify-between p-4 rounded-lg border transition-colors hover:bg-muted/50"
               :class="{
-                'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20': alert.type === 'critical' && alert.isActive,
-                'border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/20': alert.type === 'warning' && alert.isActive,
-                'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20': alert.type === 'info' && alert.isActive,
-                'opacity-60': !alert.isActive
+                'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20': alert.type === 'critical',
+                'border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/20': alert.type === 'warning',
+                'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20': alert.type === 'info',
               }"
             >
               <div class="flex items-start gap-3 flex-1">
@@ -502,9 +483,6 @@ const getRoleBadgeVariant = () => {
                     >
                       {{ alert.type.toUpperCase() }}
                     </Badge>
-                    <Badge v-if="!alert.isActive" variant="secondary" class="text-xs">
-                      INACTIVE
-                    </Badge>
                   </div>
                   <p class="text-sm font-medium mb-1">{{ alert.message }}</p>
                   <p class="text-xs text-muted-foreground">
@@ -523,19 +501,6 @@ const getRoleBadgeVariant = () => {
                   class="h-8 w-8 p-0"
                 >
                   <EditIcon class="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  @click="toggleAlertStatus(alert.id)"
-                  class="h-8 w-8 p-0"
-                  :class="{
-                    'text-green-600 hover:text-green-700': !alert.isActive,
-                    'text-orange-600 hover:text-orange-700': alert.isActive
-                  }"
-                >
-                  <CheckCircleIcon v-if="!alert.isActive" class="h-4 w-4" />
-                  <AlertTriangleIcon v-else class="h-4 w-4" />
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger as-child>

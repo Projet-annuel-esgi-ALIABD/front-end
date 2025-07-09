@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bell, AlertTriangle, Info, AlertCircle } from "lucide-vue-next";
 import axios from 'axios';
+import environment from '@/environment/environment';
 
 interface Alert {
   id: number;
@@ -18,7 +19,7 @@ const loading = ref(true);
 
 onMounted(async () => {
   loading.value = true;
-  await axios.get('/api/alerte//', {
+  await axios.get(`${environment.apiUrl}/api/alerte/`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }).then(response => {
     const data = response.data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());

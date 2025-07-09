@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import StatCard from "@/components/ui/stat-card.vue";
 import { Cloud, Droplets, Waves, Factory, Thermometer } from "lucide-vue-next";
 import axios from 'axios';
+import environment from '@/environment/environment';
 
 interface PollutionData {
   pm2_5: { value: number; trend: number };
@@ -21,7 +22,7 @@ const loading = ref(true);
 
 onMounted(async () => {
   // Simulate data fetching
-  await axios.get('/api/aq/last-10h/', {
+  await axios.get(`${environment.apiUrl}/api/aq/last-10h/`, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${localStorage.getItem('token')}`

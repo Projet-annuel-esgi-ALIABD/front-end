@@ -4,6 +4,7 @@ import { ref, onMounted } from "vue";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, Zap } from "lucide-vue-next";
 import axios from "axios";
+import environment from "@/environment/environment";
 
 interface Prediction {
   type: string;
@@ -35,7 +36,7 @@ const getDescription = (highestProbability: number, highestIndex: number) => {
 };
 
 onMounted(async () => {
-  await axios.get("/api/predict/air-quality/", {
+  await axios.get(`${environment.apiUrl}/api/predict/air-quality/`, {
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
   })
   .then(response => {

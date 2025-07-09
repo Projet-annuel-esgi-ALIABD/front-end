@@ -38,7 +38,7 @@ const loading = ref(true);
 
 const loadData = async () => {
   loading.value = true;
-  await axios.get(`/api/aq/last-month/`, {
+  await axios.get(`${environment.apiUrl}/api/aq/last-month/`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   })
   .then(response => {

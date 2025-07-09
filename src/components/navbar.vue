@@ -78,7 +78,7 @@ const getUserInitial = async () => {
   if (!token) {
     window.location.href = '/auth';
   }
-  return await axios.get('/api/user/', {
+  return await axios.get(`${environment.apiUrl}/api/user/`, {
     headers: { Authorization: `Bearer ${token}` }
   }).then(response => {
     const user = response.data;

@@ -83,14 +83,6 @@ const indicators = [
     unit: "ppm",
     description: "Carbon dioxide",
   },
-  {
-    title: "Temperature",
-    getValue: () => data.value?.temperature.value ?? 0,
-    getTrend: () => data.value?.temperature.trend ?? 0,
-    icon: Thermometer,
-    unit: "°C",
-    description: "Average city temperature",
-  },
 ];
 </script>
 
@@ -103,7 +95,7 @@ const indicators = [
     </div>
   </div>
   
-  <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+  <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
     <StatCard
       v-for="(indicator, index) in indicators"
       :key="index"

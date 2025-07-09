@@ -43,7 +43,7 @@ const formattedDate = () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-background min-w-[1200px]">
+  <div class="min-h-screen flex flex-col bg-background">
     <Navbar />
     
     <main class="flex-1 container px-4 py-6">

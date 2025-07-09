@@ -351,14 +351,13 @@ const getIndicatorLabel = (indicator: string) => {
     switch (indicator.toLowerCase()) {
         case 'co': return 'Carbon Monoxide (CO)';
         case 'no2': return 'Nitrogen Dioxide (NO2)';
+        case 'no': return 'Monoxyde d’azote (NO)';
         case 'o3': return 'Ozone (O3)';
-        case 'pm25': return 'Fine Particles (PM2.5)';
+        case 'pm2_5': return 'Fine Particles (PM2.5)';
         case 'pm10': return 'Coarse Particles (PM10)';
         case 'so2': return 'Sulfur Dioxide (SO2)';
         case 'aqi': return 'Air Quality Index';
-        case 'temperature': return 'Temperature';
-        case 'humidity': return 'Humidity';
-        case 'pressure': return 'Atmospheric Pressure';
+        case 'nh3': return 'Ammoniac (NH3)';
         default: return indicator.toUpperCase();
     }
 };
@@ -368,13 +367,12 @@ const getIndicatorUnit = (indicator: string) => {
         case 'co': return 'ppm';
         case 'no2': return 'ppb';
         case 'o3': return 'ppb';
-        case 'pm25': return 'μg/m³';
+        case 'pm2_5': return 'μg/m³';
         case 'pm10': return 'μg/m³';
         case 'so2': return 'ppb';
         case 'aqi': return 'index';
-        case 'temperature': return '°C';
-        case 'humidity': return '%';
-        case 'pressure': return 'hPa';
+        case 'nh3': return 'ppm';
+        case 'no': return 'ppm';
         default: return '';
     }
 };
@@ -388,7 +386,7 @@ const getIndicatorOptions = () => [
     { value: 'pm10', label: 'Coarse Particles (PM10)' },
     { value: 'so2', label: 'Sulfur Dioxide (SO2)' },
     { value: 'aqi', label: 'Air Quality Index' },
-    { value: 'nh3  ', label: 'Ammoniac (NH3)' },
+    { value: 'nh3', label: 'Ammoniac (NH3)' },
 ];
 </script>
 

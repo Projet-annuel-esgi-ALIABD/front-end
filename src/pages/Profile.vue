@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, toRaw } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { z } from 'zod';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
@@ -10,10 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import NavBar from '@/components/navbar.vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { UserIcon, ShieldIcon, SettingsIcon, BellIcon, PlusIcon, Trash2Icon, EditIcon, AlertTriangleIcon, InfoIcon, CheckCircleIcon } from 'lucide-vue-next';
+import { UserIcon, SettingsIcon, BellIcon, PlusIcon, Trash2Icon, EditIcon, AlertTriangleIcon, InfoIcon } from 'lucide-vue-next';
 import environment from '@/environment/environment';
 import axios from 'axios';
 
@@ -27,6 +28,13 @@ interface Alert {
     updatedAt?: string;
 }
 
+interface Threshold {
+    id: number;
+    threshold_value: number;
+    active: boolean;
+    indicator: string;
+}
+
 const { toast } = useToast();
 
 const user = ref<any>(null);
@@ -36,8 +44,9 @@ const isSavingThresholds = ref(false);
 const isCreatingAlert = ref(false);
 
 // Threshold settings
-const thresholds = ref({ airQuality: 50, traffic: 80, noise: 70, temperature: 35 });
-const newThresholds = ref({ ...thresholds.value });
+const thresholds = ref<Threshold[]>([]);
+const editingThreshold = ref<Threshold | null>(null);
+const isThresholdDialogOpen = ref(false);
 
 // Alert management
 const alerts = ref<Alert[]>([]);
@@ -52,12 +61,29 @@ const alertSchema = z.object({
     message: z.string().min(5, 'Message must be at least 5 characters').max(200, 'Message must be less than 200 characters'),
 });
 
+// Threshold form validation schema
+const thresholdSchema = z.object({
+    indicator: z.string().min(1, 'Indicator is required'),
+    threshold_value: z.number().min(0, 'Threshold value must be positive'),
+    active: z.boolean()
+});
+
 // Setup alert form
 const { handleSubmit: handleAlertSubmit, errors: alertErrors, values: alertValues, setFieldValue: setAlertFieldValue, resetForm } = useForm({
     validationSchema: toTypedSchema(alertSchema),
     initialValues: {
         type: 'info' as AlertType,
         message: ''
+    }
+});
+
+// Setup threshold form
+const { handleSubmit: handleThresholdSubmit, errors: thresholdErrors, values: thresholdValues, setFieldValue: setThresholdFieldValue, resetForm: resetThresholdForm } = useForm({
+    validationSchema: toTypedSchema(thresholdSchema),
+    initialValues: {
+        indicator: '',
+        threshold_value: 0,
+        active: true
     }
 });
 
@@ -101,6 +127,12 @@ onMounted(async () => {
             });
             isLoading.value = false;
         });
+
+        await axios.get(`${environment.apiUrl}/api/alert-treshold/`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }).then(response => {
+            thresholds.value = response.data;
+        });
     } catch (e) {
         console.error('Error loading profile:', e);
         toast({ 
@@ -113,46 +145,87 @@ onMounted(async () => {
     }
 });
 
-const getTimeAgo = (time: string | number | Date) => {
-    const now = new Date();
-    const alertTime = new Date(time);
-    const diffInSeconds = Math.floor((now.getTime() - alertTime.getTime()) / 1000);
-
-    if (diffInSeconds < 60) {
-        return `${diffInSeconds} seconds ago`;
-    } else if (diffInSeconds < 3600) {
-        const minutes = Math.floor(diffInSeconds / 60);
-        return `${minutes} minutes ago`;
+const openThresholdDialog = (threshold?: Threshold) => {
+    if (threshold) {
+        editingThreshold.value = threshold;
+        setThresholdFieldValue('indicator', threshold.indicator);
+        setThresholdFieldValue('threshold_value', threshold.threshold_value);
+        setThresholdFieldValue('active', true);
     } else {
-        const hours = Math.floor(diffInSeconds / 3600);
-        return `${hours} hours ago`;
+        editingThreshold.value = null;
+        resetThresholdForm();
     }
-}
+    isThresholdDialogOpen.value = true;
+};
 
-const saveThresholds = async () => {
+const closeThresholdDialog = () => {
+    isThresholdDialogOpen.value = false;
+    editingThreshold.value = null;
+    resetThresholdForm();
+};
+
+const onThresholdSubmit = handleThresholdSubmit(async (values) => {
     if (!isAdmin.value) return;
     
     isSavingThresholds.value = true;
     try {
-        // In real app: await axios.put(`${environment.apiUrl}/api/thresholds/`, newThresholds.value, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+        if (editingThreshold.value) {
+            // Update existing threshold
+            await axios.post(`${environment.apiUrl}/api/alert-treshold/`, values, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const index = thresholds.value.findIndex(t => t.id === editingThreshold.value!.id);
+            if (index !== -1) {
+                thresholds.value[index] = { ...editingThreshold.value, ...values };
+            }
+            toast({ 
+                title: 'Threshold updated', 
+                description: 'Threshold has been updated successfully',
+            });
+        } else {
+            // Create new threshold
+            const response = await axios.post(`${environment.apiUrl}/api/alert-treshold/`, values, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            thresholds.value.push(response.data);
+            toast({ 
+                title: 'Threshold created', 
+                description: 'New threshold has been created successfully',
+            });
+        }
         
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        thresholds.value = { ...newThresholds.value };
-        toast({ 
-            title: 'Settings saved', 
-            description: 'Threshold settings have been updated successfully',
-        });
+        closeThresholdDialog();
     } catch (e) {
-        console.error('Error saving thresholds:', e);
+        console.error('Error with threshold:', e);
         toast({ 
             title: 'Error', 
-            description: 'Failed to update threshold settings', 
+            description: 'Failed to save threshold', 
             variant: 'destructive' 
         });
     } finally {
         isSavingThresholds.value = false;
+    }
+});
+
+const deleteThreshold = async (thresholdId: number) => {
+    if (!isAdmin.value) return;
+    
+    try {
+        await axios.delete(`${environment.apiUrl}/api/alert-treshold/${thresholdId}/`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        thresholds.value = thresholds.value.filter(threshold => threshold.id !== thresholdId);
+        toast({ 
+            title: 'Threshold deleted', 
+            description: 'Threshold has been removed successfully',
+        });
+    } catch (e) {
+        console.error('Error deleting threshold:', e);
+        toast({ 
+            title: 'Error', 
+            description: 'Failed to delete threshold', 
+            variant: 'destructive' 
+        });
     }
 };
 
@@ -237,17 +310,14 @@ const onAlertSubmit = handleAlertSubmit(async (values) => {
 const deleteAlert = async (alertId: number) => {
     if (!isAdmin.value) return;
     
-    try {
-        await axios.delete(`${environment.apiUrl}/api/alerte/${alertId}/`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
-        .then(response => {
+    try {            await axios.delete(`${environment.apiUrl}/api/alerte/${alertId}/`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
             alerts.value = alerts.value.filter(alert => alert.id !== alertId);
             toast({ 
                 title: 'Alert deleted', 
                 description: 'Alert has been removed successfully',
             });
-        });
     } catch (e) {
         console.error('Error deleting alert:', e);
         toast({ 
@@ -266,6 +336,50 @@ const getAlertIcon = (type: AlertType) => {
         default: return InfoIcon;
     }
 };
+
+const getIndicatorLabel = (indicator: string) => {
+    switch (indicator.toLowerCase()) {
+        case 'co': return 'Carbon Monoxide (CO)';
+        case 'no2': return 'Nitrogen Dioxide (NO2)';
+        case 'o3': return 'Ozone (O3)';
+        case 'pm25': return 'Fine Particles (PM2.5)';
+        case 'pm10': return 'Coarse Particles (PM10)';
+        case 'so2': return 'Sulfur Dioxide (SO2)';
+        case 'aqi': return 'Air Quality Index';
+        case 'temperature': return 'Temperature';
+        case 'humidity': return 'Humidity';
+        case 'pressure': return 'Atmospheric Pressure';
+        default: return indicator.toUpperCase();
+    }
+};
+
+const getIndicatorUnit = (indicator: string) => {
+    switch (indicator.toLowerCase()) {
+        case 'co': return 'ppm';
+        case 'no2': return 'ppb';
+        case 'o3': return 'ppb';
+        case 'pm25': return 'μg/m³';
+        case 'pm10': return 'μg/m³';
+        case 'so2': return 'ppb';
+        case 'aqi': return 'index';
+        case 'temperature': return '°C';
+        case 'humidity': return '%';
+        case 'pressure': return 'hPa';
+        default: return '';
+    }
+};
+
+const getIndicatorOptions = () => [
+    { value: 'co', label: 'Carbon Monoxide (CO)' },
+    { value: 'no2', label: 'Nitrogen Dioxide (NO2)' },
+    { value: 'no', label: 'Monoxyde d’azote (NO)' },
+    { value: 'o3', label: 'Ozone (O3)' },
+    { value: 'pm2_5', label: 'Fine Particles (PM2.5)' },
+    { value: 'pm10', label: 'Coarse Particles (PM10)' },
+    { value: 'so2', label: 'Sulfur Dioxide (SO2)' },
+    { value: 'aqi', label: 'Air Quality Index' },
+    { value: 'nh3  ', label: 'Ammoniac (NH3)' },
+];
 </script>
 
 <template>
@@ -317,68 +431,144 @@ const getAlertIcon = (type: AlertType) => {
       <!-- Admin: Threshold Settings -->
       <Card v-if="isAdmin" class="border-orange-200 dark:border-orange-900">
         <CardHeader>
-          <CardTitle class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-            <SettingsIcon class="h-5 w-5" />
-            Environmental Thresholds
-          </CardTitle>
-          <CardDescription>Configure alert thresholds for environmental monitoring</CardDescription>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                <SettingsIcon class="h-5 w-5" />
+                Environmental Thresholds
+              </CardTitle>
+              <CardDescription>Configure alert thresholds for environmental monitoring</CardDescription>
+            </div>
+            <Dialog v-model:open="isThresholdDialogOpen">
+              <DialogTrigger as-child>
+                <Button @click="openThresholdDialog()" class="flex items-center gap-2">
+                  <PlusIcon class="h-4 w-4" />
+                  Add Threshold
+                </Button>
+              </DialogTrigger>
+              <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {{ editingThreshold ? 'Edit Threshold' : 'Add New Threshold' }}
+                  </DialogTitle>
+                </DialogHeader>
+                <form @submit.prevent="onThresholdSubmit" class="space-y-4">
+                  <div class="space-y-2">
+                    <Label>Indicator</Label>
+                    <Select :model-value="thresholdValues.indicator" @update:model-value="(value) => setThresholdFieldValue('indicator', value as string)">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select indicator" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="option in getIndicatorOptions()" :key="option.value" :value="option.value">
+                          {{ option.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p v-if="thresholdErrors.indicator" class="text-sm text-destructive">{{ thresholdErrors.indicator }}</p>
+                  </div>
+                  <div class="space-y-2">
+                    <Label>Threshold Value</Label>
+                    <Input 
+                      :value="thresholdValues.threshold_value" 
+                      @input="setThresholdFieldValue('threshold_value', Number($event.target.value))"
+                      type="number" 
+                      min="0" 
+                      step="0.1"
+                      placeholder="Enter threshold value"
+                    />
+                    <p v-if="thresholdErrors.threshold_value" class="text-sm text-destructive">{{ thresholdErrors.threshold_value }}</p>
+                  </div>
+                  <div class="flex  items-center gap-2 hidden">
+                    <Checkbox 
+                      :checked="thresholdValues.active" 
+                      @update:checked="setThresholdFieldValue('active', $event)"
+                    />
+                    <Label>Active</Label>
+                  </div>
+                  <div class="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="outline" @click="closeThresholdDialog">
+                      Cancel
+                    </Button>
+                    <Button type="submit" :disabled="isSavingThresholds">
+                      <div v-if="isSavingThresholds" class="flex items-center gap-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        {{ editingThreshold ? 'Updating...' : 'Adding...' }}
+                      </div>
+                      <span v-else>{{ editingThreshold ? 'Update Threshold' : 'Add Threshold' }}</span>
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
-          <form @submit.prevent="saveThresholds" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Label>Air Quality Index (AQI)</Label>
-                <Input 
-                  v-model.number="newThresholds.airQuality" 
-                  type="number" 
-                  min="0" 
-                  max="500" 
-                  placeholder="Enter AQI threshold"
-                />
-                <p class="text-xs text-muted-foreground">Values above this will trigger alerts</p>
+          <div v-if="thresholds.length === 0" class="text-center py-8">
+            <SettingsIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p class="text-muted-foreground">No thresholds configured</p>
+            <p class="text-sm text-muted-foreground mt-2">Click "Add Threshold" to create your first threshold</p>
+          </div>
+          <div v-else class="space-y-3">
+            <div 
+              v-for="threshold in thresholds" 
+              :key="threshold.id"
+              class="flex items-center justify-between p-4 rounded-lg border transition-colors hover:bg-muted/50"
+            >
+              <div class="flex items-center gap-4 flex-1">
+                <div class="flex items-center gap-2">
+                  <Badge variant="outline" class="text-xs">
+                    {{ threshold.indicator.toUpperCase() }}
+                  </Badge>
+                  <div 
+                    class="w-3 h-3 rounded-full"
+                    :class="threshold.active ? 'bg-green-500' : 'bg-gray-400'"
+                  ></div>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2">
+                    <Label class="text-sm font-medium">{{ getIndicatorLabel(threshold.indicator) }}</Label>
+                    <span class="text-sm text-muted-foreground">•</span>
+                    <span class="text-sm font-mono">{{ threshold.threshold_value }} {{ getIndicatorUnit(threshold.indicator) }}</span>
+                  </div>
+                </div>
               </div>
-              <div class="space-y-2">
-                <Label>Traffic Congestion (%)</Label>
-                <Input 
-                  v-model.number="newThresholds.traffic" 
-                  type="number" 
-                  min="0" 
-                  max="100" 
-                  placeholder="Enter traffic threshold"
-                />
-                <p class="text-xs text-muted-foreground">Percentage of traffic capacity</p>
-              </div>
-              <div class="space-y-2">
-                <Label>Noise Level (dB)</Label>
-                <Input 
-                  v-model.number="newThresholds.noise" 
-                  type="number" 
-                  min="0" 
-                  max="120" 
-                  placeholder="Enter noise threshold"
-                />
-                <p class="text-xs text-muted-foreground">Decibel level for noise alerts</p>
-              </div>
-              <div class="space-y-2">
-                <Label>Temperature (°C)</Label>
-                <Input 
-                  v-model.number="newThresholds.temperature" 
-                  type="number" 
-                  min="-20" 
-                  max="50" 
-                  placeholder="Enter temperature threshold"
-                />
-                <p class="text-xs text-muted-foreground">Maximum temperature for alerts</p>
+              <div class="flex items-center gap-1 ml-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  @click="openThresholdDialog(threshold)"
+                  class="h-8 w-8 p-0"
+                >
+                  <EditIcon class="h-4 w-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger as-child>
+                    <Button variant="ghost" size="sm" class="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+                      <Trash2Icon class="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Threshold</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this threshold for {{ getIndicatorLabel(threshold.indicator) }}? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        @click="deleteThreshold(threshold.id)"
+                        class="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
-            <Button type="submit" :disabled="isSavingThresholds" class="w-full md:w-auto">
-              <div v-if="isSavingThresholds" class="flex items-center gap-2">
-                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Saving...
-              </div>
-              <span v-else>Save Threshold Settings</span>
-            </Button>
-          </form>
+          </div>
         </CardContent>
       </Card>
 

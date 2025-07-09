@@ -77,13 +77,10 @@ const formattedDate = () => {
       <div v-else class="space-y-8">
         <PollutionIndicators />
         
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 flex flex-col justify-center">
+          <WeatherWidget />
           <AirQualityChart />
-          <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <WeatherWidget />
-            <PredictionCard />
-            <PredictionCard />
-          </div>
+          <PredictionCard />
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

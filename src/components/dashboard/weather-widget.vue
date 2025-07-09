@@ -11,12 +11,6 @@ interface WeatherData {
   temperature: number;
   humidity: number;
   windSpeed: number;
-  precipitation: number;
-  forecast: Array<{
-    day: string;
-    type: WeatherType;
-    temperature: number;
-  }>;
 }
 
 const weather = ref<WeatherData | null>(null);
@@ -30,14 +24,6 @@ onMounted(() => {
       temperature: 22,
       humidity: 65,
       windSpeed: 12,
-      precipitation: 20,
-      forecast: [
-        { day: "Mon", type: "cloudy", temperature: 22 },
-        { day: "Tue", type: "rainy", temperature: 19 },
-        { day: "Wed", type: "rainy", temperature: 18 },
-        { day: "Thu", type: "cloudy", temperature: 20 },
-        { day: "Fri", type: "sunny", temperature: 24 },
-      ],
     };
     loading.value = false;
   }, 1200);
@@ -60,7 +46,7 @@ const renderWeatherIcon = (type: WeatherType, size = 24) => {
 </script>
 
 <template>
-  <Card class="animate-fade-in">
+  <Card class="animate-fade-i justify-center items-center flex flex-col">
     <CardHeader class="pb-2">
       <CardTitle class="text-base font-medium">Weather</CardTitle>
     </CardHeader>
@@ -83,32 +69,13 @@ const renderWeatherIcon = (type: WeatherType, size = 24) => {
         </div>
         <div class="text-3xl font-bold mb-2">{{ weather?.temperature }}°C</div>
         <div class="grid grid-cols-1 gap-2 w-full text-sm">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between gap-2">
             <span class="text-muted-foreground">Humidity</span>
             <span class="font-medium">{{ weather?.humidity }}%</span>
           </div>
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between gap-2">
             <span class="text-muted-foreground">Wind</span>
             <span class="font-medium">{{ weather?.windSpeed }} km/h</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">Precipitation</span>
-            <span class="font-medium">{{ weather?.precipitation }}%</span>
-          </div>
-        </div>
-        <div class="w-full mt-4 pt-4 border-t">
-          <div class="flex justify-between">
-            <div 
-              v-for="(day, i) in weather?.forecast" 
-              :key="i" 
-              class="flex flex-col items-center"
-            >
-              <span class="text-xs text-muted-foreground">{{ day.day }}</span>
-              <div class="my-1">
-                <component :is="renderWeatherIcon(day.type, 16)" />
-              </div>
-              <span class="text-xs font-medium">{{ day.temperature }}°</span>
-            </div>
           </div>
         </div>
       </div>

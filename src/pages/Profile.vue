@@ -67,7 +67,6 @@ onMounted(async () => {
         const token = localStorage.getItem('token');
         if (token) {
             try {
-                // Decode JWT token to get user info (simplified)
                 await axios.get(`${environment.apiUrl}/api/user/`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }).then(response => {
@@ -89,7 +88,12 @@ onMounted(async () => {
             });
         }
 
-        // Mock alerts data - in real app, fetch from API
+        await axios.get(`${environment.apiUrl}/api/alerte/`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }).then(response => {
+            thresholds.value = response.data;
+            newThresholds.value = { ...thresholds.value };
+        });
         alerts.value = [
             { 
                 id: 1, 

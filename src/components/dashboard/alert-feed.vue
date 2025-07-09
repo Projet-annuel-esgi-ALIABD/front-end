@@ -4,54 +4,55 @@ import { ref, onMounted } from 'vue';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bell, AlertTriangle, Info, AlertCircle } from "lucide-vue-next";
+import axios from 'axios';
 
 interface Alert {
   id: number;
   type: "info" | "warning" | "critical";
   message: string;
-  location: string;
   time: string;
 }
 
 const alerts = ref<Alert[]>([]);
 const loading = ref(true);
 
-onMounted(() => {
-  // Mock API call
-  setTimeout(() => {
-    alerts.value = [
-      {
-        id: 1,
-        type: "critical",
-        message: "Air quality critical threshold exceeded",
-        location: "Downtown District",
-        time: "10 minutes ago"
-      },
-      {
-        id: 2,
-        type: "warning",
-        message: "Traffic congestion detected",
-        location: "Central Avenue",
-        time: "25 minutes ago"
-      },
-      {
-        id: 3,
-        type: "info",
-        message: "Street cleaning scheduled",
-        location: "Northern Residential Area",
-        time: "1 hour ago"
-      },
-      {
-        id: 4,
-        type: "warning",
-        message: "Heavy rainfall predicted",
-        location: "City-wide",
-        time: "2 hours ago"
-      },
-    ];
+onMounted(async () => {
+  loading.value = true;
+  await axios.get('/api/alerte//', {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }).then(response => {
+    const data = response.data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    data.map((item: any) => {
+      alerts.value.push({
+        id: item.id,
+        type: item.alert_type,
+        message: item.message,
+        time: getTimeAgo(item.created_at)
+      });
+    });
+    console.log("Alerts loaded successfully:", alerts.value);
     loading.value = false;
-  }, 1800);
+  }).catch(error => {
+    console.error("Error fetching alerts:", error);
+    loading.value = false;
+  });
 });
+
+const getTimeAgo = (time: string | number | Date) => {
+  const now = new Date();
+  const alertTime = new Date(time);
+  const diffInSeconds = Math.floor((now.getTime() - alertTime.getTime()) / 1000);
+
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds} seconds ago`;
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} minutes ago`;
+  } else {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} hours ago`;
+  }
+}
 
 const getAlertIcon = (type: string) => {
   switch (type) {
@@ -126,7 +127,6 @@ const getBadgeVariant = (type: string) => {
               </Badge>
             </div>
             <div class="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{{ alert.location }}</span>
               <span>{{ alert.time }}</span>
             </div>
           </div>

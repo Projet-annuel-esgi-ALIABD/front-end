@@ -76,12 +76,6 @@ const formattedDate = () => {
       
       <div v-else class="space-y-8">
         <PollutionIndicators />
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TrafficChart />
-          <div class="md:col-span-2 grid grid-cols-1 gap-4">
-            <AlertFeed />
-          </div>
-        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
           <AirQualityChart />
@@ -92,6 +86,12 @@ const formattedDate = () => {
           </div>
         </div>
         
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TrafficChart />
+          <div class="md:col-span-2 grid grid-cols-1 gap-4">
+            <AlertFeed />
+          </div>
+        </div>
         
       </div>
     </main>

@@ -55,7 +55,7 @@ const isDialogOpen = ref(false);
 
 // Pagination
 const currentPage = ref(1);
-const itemsPerPage = ref(10);
+const itemsPerPage = ref(5);
 const totalPages = computed(() => Math.ceil(alerts.value.length / itemsPerPage.value));
 const paginatedAlerts = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value;

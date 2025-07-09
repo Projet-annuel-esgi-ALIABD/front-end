@@ -53,6 +53,16 @@ const alerts = ref<Alert[]>([]);
 const editingAlert = ref<Alert | null>(null);
 const isDialogOpen = ref(false);
 
+// Pagination
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const totalPages = computed(() => Math.ceil(alerts.value.length / itemsPerPage.value));
+const paginatedAlerts = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value;
+    const end = start + itemsPerPage.value;
+    return alerts.value.slice(start, end);
+});
+
 // Alert form validation schema
 const alertSchema = z.object({
     type: z.enum(['info', 'warning', 'critical'], {
@@ -644,78 +654,108 @@ const getIndicatorOptions = () => [
             <BellIcon class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p class="text-muted-foreground">No alerts found</p>
           </div>
-          <div v-else class="space-y-3">
-            <div 
-              v-for="alert in alerts" 
-              :key="alert.id" 
-              class="flex items-start justify-between p-4 rounded-lg border transition-colors hover:bg-muted/50"
-              :class="{
-                'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20': alert.type === 'critical',
-                'border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/20': alert.type === 'warning',
-                'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20': alert.type === 'info',
-              }"
-            >
-              <div class="flex items-start gap-3 flex-1">
-                <component 
-                  :is="getAlertIcon(alert.type)" 
-                  class="h-5 w-5 mt-0.5 flex-shrink-0"
-                  :class="{
-                    'text-red-600 dark:text-red-400': alert.type === 'critical',
-                    'text-orange-600 dark:text-orange-400': alert.type === 'warning',
-                    'text-blue-600 dark:text-blue-400': alert.type === 'info'
-                  }"
-                />
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-1">
-                    <Badge 
-                      :variant="alert.type === 'critical' ? 'destructive' : 'default'"
-                      class="text-xs"
-                    >
-                      {{ alert.type.toUpperCase() }}
-                    </Badge>
+          <div v-else class="space-y-4">
+            <div class="space-y-3">
+              <div 
+                v-for="alert in paginatedAlerts" 
+                :key="alert.id" 
+                class="flex items-start justify-between p-4 rounded-lg border transition-colors hover:bg-muted/50"
+                :class="{
+                  'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20': alert.type === 'critical',
+                  'border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/20': alert.type === 'warning',
+                  'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20': alert.type === 'info',
+                }"
+              >
+                <div class="flex items-start gap-3 flex-1">
+                  <component 
+                    :is="getAlertIcon(alert.type)" 
+                    class="h-5 w-5 mt-0.5 flex-shrink-0"
+                    :class="{
+                      'text-red-600 dark:text-red-400': alert.type === 'critical',
+                      'text-orange-600 dark:text-orange-400': alert.type === 'warning',
+                      'text-blue-600 dark:text-blue-400': alert.type === 'info'
+                    }"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <Badge 
+                        :variant="alert.type === 'critical' ? 'destructive' : 'default'"
+                        class="text-xs"
+                      >
+                        {{ alert.type.toUpperCase() }}
+                      </Badge>
+                    </div>
+                    <p class="text-sm font-medium mb-1">{{ alert.message }}</p>
+                    <p class="text-xs text-muted-foreground">
+                      Created: {{ new Date(alert.createdAt).toLocaleString() }}
+                      <span v-if="alert.updatedAt" class="ml-2">
+                        • Updated: {{ new Date(alert.updatedAt).toLocaleString() }}
+                      </span>
+                    </p>
                   </div>
-                  <p class="text-sm font-medium mb-1">{{ alert.message }}</p>
-                  <p class="text-xs text-muted-foreground">
-                    Created: {{ new Date(alert.createdAt).toLocaleString() }}
-                    <span v-if="alert.updatedAt" class="ml-2">
-                      • Updated: {{ new Date(alert.updatedAt).toLocaleString() }}
-                    </span>
-                  </p>
+                </div>
+                <div v-if="isAdmin" class="flex items-center gap-1 ml-3">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    @click="openAlertDialog(alert)"
+                    class="h-8 w-8 p-0"
+                  >
+                    <EditIcon class="h-4 w-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger as-child>
+                      <Button variant="ghost" size="sm" class="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+                        <Trash2Icon class="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Alert</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this alert? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          @click="deleteAlert(alert.id)"
+                          class="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
-              <div v-if="isAdmin" class="flex items-center gap-1 ml-3">
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div class="flex items-center justify-between pt-4 border-t">
+              <div class="text-sm text-muted-foreground">
+                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, alerts.length) }} of {{ alerts.length }} alerts
+              </div>
+              <div class="flex items-center gap-2">
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  @click="openAlertDialog(alert)"
-                  class="h-8 w-8 p-0"
+                  @click="currentPage--"
+                  :disabled="currentPage === 1"
                 >
-                  <EditIcon class="h-4 w-4" />
+                  Previous
                 </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger as-child>
-                    <Button variant="ghost" size="sm" class="h-8 w-8 p-0 text-red-600 hover:text-red-700">
-                      <Trash2Icon class="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Alert</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this alert? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        @click="deleteAlert(alert.id)"
-                        class="bg-red-600 hover:bg-red-700"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <span class="text-sm">
+                  Page {{ currentPage }} of {{ totalPages }}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  @click="currentPage++"
+                  :disabled="currentPage === totalPages"
+                >
+                  Next
+                </Button>
               </div>
             </div>
           </div>

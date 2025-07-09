@@ -1,9 +1,9 @@
-<!-- filepath: /c:/Users/Noureddine/Cours/ProjetAnnuel1/front-end/src/components/dashboard/AlertFeed.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bell, AlertTriangle, Info, AlertCircle } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
+import { Bell, AlertTriangle, Info, AlertCircle, ChevronLeft, ChevronRight } from "lucide-vue-next";
 import axios from 'axios';
 import environment from '@/environment/environment';
 
@@ -16,6 +16,28 @@ interface Alert {
 
 const alerts = ref<Alert[]>([]);
 const loading = ref(true);
+const currentPage = ref(1);
+const itemsPerPage = ref(5);
+
+const totalPages = computed(() => Math.ceil(alerts.value.length / itemsPerPage.value));
+
+const paginatedAlerts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return alerts.value.slice(start, end);
+});
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
 
 onMounted(async () => {
   loading.value = true;
@@ -110,28 +132,53 @@ const getBadgeVariant = (type: string) => {
           </div>
         </div>
       </div>
-      <ul v-else class="divide-y animate-fade-in">
-        <li 
-          v-for="alert in alerts" 
-          :key="alert.id" 
-          class="flex items-start p-4 space-x-3 transition-colors hover:bg-muted/30"
-        >
-          <div class="mt-0.5">
-            <component :is="getAlertIcon(alert.type)" :class="getIconClass(alert.type)" />
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center justify-between mb-1">
-              <h4 class="text-sm font-medium">{{ alert.message }}</h4>
-              <Badge variant="outline" :class="getBadgeVariant(alert.type)">
-                {{ alert.type }}
-              </Badge>
+      <div v-else>
+        <ul class="divide-y animate-fade-in">
+          <li 
+            v-for="alert in paginatedAlerts" 
+            :key="alert.id" 
+            class="flex items-start p-4 space-x-3 transition-colors hover:bg-muted/30"
+          >
+            <div class="mt-0.5">
+              <component :is="getAlertIcon(alert.type)" :class="getIconClass(alert.type)" />
             </div>
-            <div class="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{{ alert.time }}</span>
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-1">
+                <h4 class="text-sm font-medium">{{ alert.message }}</h4>
+                <Badge variant="outline" :class="getBadgeVariant(alert.type)">
+                  {{ alert.type }}
+                </Badge>
+              </div>
+              <div class="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{{ alert.time }}</span>
+              </div>
             </div>
+          </li>
+        </ul>
+        <div v-if="alerts.length > 0" class="flex items-center justify-between p-4 border-t">
+          <div class="text-sm text-muted-foreground">
+            {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, alerts.length) }} of {{ alerts.length }} alerts
           </div>
-        </li>
-      </ul>
+          <div class="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              :disabled="currentPage === 1"
+              @click="previousPage"
+            >
+              <ChevronLeft class="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              :disabled="currentPage === totalPages"
+              @click="nextPage"
+            >
+              <ChevronRight class="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </CardContent>
   </Card>
 </template>

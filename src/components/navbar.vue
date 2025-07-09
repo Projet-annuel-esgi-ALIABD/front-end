@@ -92,7 +92,7 @@ const getUserInitial = async () => {
 </script>
 
 <template>
-  <header class="min-w-[700px] md:grid-cols-6 sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  <header class="md:grid-cols-6 sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
     <div class="container flex h-16 items-center justify-between">
       <div class="flex items-center">
         <RouterLink to="/" class="flex items-center">
